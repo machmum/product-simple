@@ -1,0 +1,12 @@
+TIMEOUT=10
+DEBUG=true
+SERVER_ADDRESS=8080
+BASIC_AUTH_USERNAME=test
+BASIC_AUTH_PASSWORD=test
+JWT_PUBLIC_KEY=some_path
+DB_PROVIDER=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASS=postgres
+DB_NAME=product-simple
