@@ -1,4 +1,4 @@
-FROM golang:1.12-alpine as build
+FROM golang:1.13-alpine as build
 
 ARG _BUILD_FILE
 
@@ -10,9 +10,7 @@ RUN apk update && apk add --no-cache git tzdata && \
 
 ADD . /src/
 
-RUN ls -al
 RUN go mod vendor
-RUN ls -al vendor
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -mod=vendor -ldflags="-w -s" -i -o $_BUILD_FILE cmd/rest/main.go
