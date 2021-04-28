@@ -19,6 +19,23 @@ type Handler struct {
 func NewHandler(e *echo.Echo, us product.Usecase) {
 	handler := &Handler{uc: us}
 
+	// swagger:route GET /product product-tag idOfProductEndpoint
+	// View product detail.
+	//
+	// Schemes: http, https
+	//
+	// Security:
+	// 		Bearer: []
+	// 		BasicAuth: []
+	//
+	// Responses:
+	//     '200': productResponse
+	//     '401':
+	//         description: Unauthorized
+	//     '404':
+	//         description: Not Found
+	//     '500':
+	//         description: Internal server error
 	e.GET("/product", handler.view)
 }
 

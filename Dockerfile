@@ -1,4 +1,4 @@
-FROM golang:1.12-alpine as build
+FROM golang:1.13-alpine as build
 
 ARG _BUILD_FILE
 
@@ -20,18 +20,21 @@ RUN echo 'nobody:x:65534:' > /src/group.nobody && \
     echo 'nobody:x:65534:65534::/:' > /src/passwd.nobody
 
 FROM gcr.io/distroless/static
+#FROM alpine
 
-WORKDIR /bin
+ARG _BUILD_FILE
+
+WORKDIR /go/bin
 
 ENV PORT=8080
 EXPOSE 8080
-
-# Add main program
-COPY --from=build /src/$_BUILD_FILE $_BUILD_FILE
 
 # Copy group
 COPY --from=build /src/group.nobody /etc/group
 COPY --from=build /src/passwd.nobody /etc/passwd
 USER nobody:nobody
 
-ENTRYPOINT ["/bin/rest"]
+# Add main program
+COPY --from=build /src/$_BUILD_FILE app
+
+ENTRYPOINT ["/go/bin/rest"]

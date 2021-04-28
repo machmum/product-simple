@@ -19,7 +19,7 @@ func ServerOpts() optin.Options {
 		Flag: optin.WithFlag{
 			Debug:        cfg.Env.Debug,
 			UseToken:     false,
-			UseBasicAuth: true,
+			UseBasicAuth: false,
 		},
 		Credential: optin.WithCredential{
 			JwtToken: cfg.Env.JwtPublicKey,
