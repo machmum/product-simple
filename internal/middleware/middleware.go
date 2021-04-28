@@ -11,15 +11,47 @@ import (
 	"github.com/elevenia/product-simple/internal/options"
 	"github.com/elevenia/product-simple/internal/token/jwt"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 )
 
-func NewMiddleware(f optin.WithFlag, secretFile string) *mw {
-	return &mw{b: jwtin.InitAuth(f, secretFile)}
+// failed will write a default template response when returning a failed response
+func failed(c echo.Context, code int, err error) error {
+	response := map[string]interface{}{
+		"data": nil,
+		"error": map[string]interface{}{
+			"code":    0,
+			"status":  code,
+			"message": err.Error(),
+		},
+	}
+	c.Response().Header().Set("Content-Type", "application/json")
+	return c.JSON(code, response)
+}
+
+func hasAuthorization(c echo.Context) bool {
+	return c.Request().Header.Get(constant.HeaderAuth) != ""
+}
+
+func isBearerAuth(c echo.Context) bool {
+	if !hasAuthorization(c) {
+		return false
+	}
+	parts := strings.SplitN(c.Request().Header.Get(constant.HeaderAuth), " ", 2)
+	if !(len(parts) == 2 && parts[0] == constant.AuthBearer) {
+		return false
+	}
+	return true
+}
+
+func NewMiddleware(opt optin.Options, secretFile string) *mw {
+	return &mw{b: jwtin.InitAuth(opt.Flag, secretFile), opt: opt}
 }
 
 // mw middleware contains jwt pub key
 type mw struct {
-	b jwtin.JWT
+	b             jwtin.JWT
+	opt           optin.Options
+	basicAuthSkip bool
 }
 
 func (m *mw) CORS(next echo.HandlerFunc) echo.HandlerFunc {
@@ -36,18 +68,54 @@ func (m *mw) CORS(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func (m *mw) skipBasicAuth() bool {
+	m.basicAuthSkip = true
+	return true
+}
+
+func (m *mw) useBasicAUth() bool {
+	m.basicAuthSkip = false
+	return false
+}
+
+func (m *mw) BasicAuthConfig() middleware.BasicAuthConfig {
+	skipper := func(c echo.Context) bool {
+		if m.opt.Flag.UseBasicAuth {
+			if m.opt.Flag.UseToken && isBearerAuth(c) {
+				return m.skipBasicAuth()
+			}
+			return m.useBasicAUth()
+		}
+		return m.skipBasicAuth()
+	}
+
+	return middleware.BasicAuthConfig{
+		Skipper:   skipper,
+		Validator: m.opt.BasicAuthFn,
+	}
+}
+
 func (m *mw) AuthToken() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 
-			token := c.Request().Header.Get(constant.HeaderRequestedToken)
+			if m.opt.Flag.UseToken && !isBearerAuth(c) {
+				if m.opt.Flag.UseBasicAuth && !m.basicAuthSkip {
+					return next(&jwtin.ClaimsContext{Context: c})
+				}
+				return failed(c, http.StatusUnauthorized, errin.ErrTokenRequired)
+			}
+
+			token := c.Request().Header.Get(constant.HeaderAuth)
 			if token == "" {
 				logger.InfoLog(context.Background(), constant.Failed, "AuthToken.GetToken", errin.ErrTokenRequired)
+				return failed(c, http.StatusUnauthorized, errin.ErrTokenRequired)
 			}
 
 			claims, err := m.b.Parse(token)
 			if err != nil {
 				logger.InfoLog(context.Background(), constant.Failed, "AuthToken.Parse", err)
+				return failed(c, err.Code(), err)
 			}
 
 			return next(&jwtin.ClaimsContext{

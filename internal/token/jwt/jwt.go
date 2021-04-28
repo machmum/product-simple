@@ -68,7 +68,7 @@ func (m *jwtAuth) Parse(token string) (Claims, errin.Error) {
 	}
 
 	parsedToken, err := jwt.ParseWithClaims(
-		parts[1], claims, func(*jwt.Token) (interface{}, error) {
+		parts[1], &claims, func(*jwt.Token) (interface{}, error) {
 			return m.publicKey, nil
 		},
 	)
@@ -78,7 +78,6 @@ func (m *jwtAuth) Parse(token string) (Claims, errin.Error) {
 		}
 		return claims, errin.NewError(http.StatusForbidden, err)
 	}
-
 	if !parsedToken.Valid {
 		return claims, errin.NewError(http.StatusForbidden, errin.ErrInvalidToken)
 	}

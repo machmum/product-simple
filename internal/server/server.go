@@ -22,7 +22,7 @@ type Server interface {
 
 // New returns new server with default middleware
 func New(opt optin.Options) Server {
-	mw := mwin.NewMiddleware(opt.Flag, opt.Credential.JwtToken)
+	mw := mwin.NewMiddleware(opt, opt.Credential.JwtToken)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -41,15 +41,16 @@ func New(opt optin.Options) Server {
 		mw.AccessLog(),
 	)
 
+	// BasicAuth implement basic auth
+	if opt.Flag.UseBasicAuth {
+		e.Use(middleware.BasicAuthWithConfig(mw.BasicAuthConfig()))
+	}
+
 	// ClaimsToken validate and claims object in token
 	if opt.Flag.UseToken {
 		e.Use(mw.AuthToken())
 	}
 
-	// BasicAuth implement basic auth
-	if opt.Flag.UseBasicAuth {
-		e.Use(middleware.BasicAuth(opt.BasicAuthFn))
-	}
 	return &server{e: e, opt: opt}
 }
 

@@ -16,6 +16,8 @@ const (
 )
 
 const (
+	AuthBearer           = "Bearer"
+	AuthBasic            = "Basic"
 	HeaderContentType    = "Content-Type"
 	HeaderRequestID      = "Access-Control-Requested-Id"
 	HeaderAllowOrigin    = "Access-Control-Allow-Origin"
