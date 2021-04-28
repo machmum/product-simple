@@ -37,4 +37,4 @@ USER nobody:nobody
 # Add main program
 COPY --from=build /src/$_BUILD_FILE app
 
-ENTRYPOINT ["/go/bin/rest"]
+ENTRYPOINT ["/go/bin/app"]
